@@ -128,5 +128,99 @@ class Levelsys(commands.Cog):
     card = File(fp=background.image_bytes, filename="zCARD.png")
     await ctx.send(file=card)
 
+  @commands.command(name="leaderboard")
+  async def leaderboard(self, ctx, range_num=5):
+    with open("levels.json", "r") as f:
+      data = json.load(f)
+
+    l = {}
+    total_xp = []
+
+    for userid in data:
+      xp = int(data[str(userid)]['xp']+(int(data[str(userid)]['level'])*100))
+
+      l[xp] = f"{userid};{data[str(userid)]['level']};{data[str(userid)]['xp']}"
+      total_xp.append(xp)
+
+    total_xp = sorted(total_xp, reverse=True)
+    index=1
+
+    mbed = discord.Embed(
+      title="Leaderboard Command Results"
+    )
+
+    for amt in total_xp:
+      id_ = int(str(l[amt]).split(";")[0])
+      level = int(str(l[amt]).split(";")[1])
+      xp = int(str(l[amt]).split(";")[2])
+
+      member = await self.bot.fetch_user(id_)
+
+      if member is not None:
+        name = member.name
+        mbed.add_field(name=f"{index}. {name}",
+        value=f"**Level: {level} | XP: {xp}**", 
+        inline=False)
+
+        if index == range_num:
+          break
+        else:
+          index += 1
+
+    await ctx.send(embed = mbed)
+
+  @commands.command("rank_reset")
+  async def rank_reset(self, ctx, user: Optional[discord.Member]):
+    member = user or ctx.author
+
+    #this if statement will check that user who's using this command is trying to remove his data or any other user data
+    #if she is trying to remove any other user's data then we are going to check that he has a specific role or not (in my case its 'Bot-Mod') so that only admins can remov any users data and not other people can remove other
+    if not member == ctx.author:
+      role = discord.utils.get(ctx.author.guild.roles, name="Bot-Mod")
+
+      if not role in member.roles:
+        await ctx.send(f"You can only reset your data, to reset other data you must have {role.mention} role")
+        return 
+    
+    with open("levels.json", "r") as f:
+      data = json.load(f)
+
+    del data[str(member.id)]
+
+    with open("levels.json", "w") as f:
+      json.dump(data, f)
+
+    await ctx.send(f"{member.mention}'s Data Got reset")
+  
+  @commands.command(name="increase_level")
+  @commands.has_role("Bot-Mod")
+  async def increase_level(self, ctx, increase_by: int, user: Optional[discord.Member]):
+    member = user or ctx.author
+
+    with open("levels.json", "r") as f:
+      data = json.load(f)
+    
+    data[str(member.id)]['level'] += increase_by
+
+    with open("levels.json", "w") as f:
+      json.dump(data, f)
+    
+    await ctx.send(f"{member.mention}, Your level was increased by {increase_by}")
+
+  @commands.command(name="increase_xp")
+  @commands.has_role("Bot-Mod")
+  async def increase_xp(self, ctx, increase_by: int, user: Optional[discord.Member]):
+    member = user or ctx.author
+
+    with open("levels.json", "r") as f:
+      data = json.load(f)
+
+    data[str(member.id)]['xp'] += increase_by
+
+    with open("levels.json", "w") as f:
+      json.dump(data, f)
+
+    await ctx.send(f"{member.mention}, Your Xp was increased by {increase_by}")
+
 def setup(client):
   client.add_cog(Levelsys(client))
