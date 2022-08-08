@@ -167,16 +167,13 @@ class Levelsys(commands.Cog):
       data = json.load(f)
 
     l = {}
-    total_xp = []
 
     for userid in data[str(ctx.guild.id)]:
       xp = int(data[str(ctx.guild.id)][str(userid)]['xp']+(int(data[str(ctx.guild.id)][str(userid)]['level'])*100))
 
       l[xp] = f"{userid};{data[str(ctx.guild.id)][str(userid)]['level']};{data[str(ctx.guild.id)][str(userid)]['xp']}"
-      total_xp.append(xp)
 
-    total_xp = sorted(total_xp, reverse=True)
-    index=1
+    l = dict(sorted(l.items(), key=lambda x:x[0], reverse=True))
 
     mbed = discord.Embed(
       title="Leaderboard Command Results"
